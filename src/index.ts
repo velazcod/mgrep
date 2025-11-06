@@ -31,11 +31,18 @@ program
       store_identifiers: [options.store],
     });
 
-    console.log(results.data.map((result) => {
-        let content = result.type == "text" ? result.text : `Not a text chunk! (${result.type})`;
-        content = JSON.stringify(content);
-        return `${(result.metadata as any)?.path ?? "Unknown path"}: ${content}`;
-    }).join("\n"));
+    console.log(
+      results.data
+        .map((result) => {
+          let content =
+            result.type == "text"
+              ? result.text
+              : `Not a text chunk! (${result.type})`;
+          content = JSON.stringify(content);
+          return `${(result.metadata as any)?.path ?? "Unknown path"}: ${content}`;
+        })
+        .join("\n"),
+    );
   });
 
 program
@@ -51,26 +58,28 @@ program
     const watchRoot = process.cwd();
     console.log("Watching for file changes in", watchRoot);
     try {
-      fs.watch(
-        watchRoot,
-        { recursive: true },
-        (eventType, rawFilename) => {
-          const filename = rawFilename?.toString();
-          if (!filename) {
-            return;
-          }
-          const filePath = path.join(watchRoot, filename);
-          console.log(`${eventType}: ${filePath}`);
+      fs.watch(watchRoot, { recursive: true }, (eventType, rawFilename) => {
+        const filename = rawFilename?.toString();
+        if (!filename) {
+          return;
+        }
+        const filePath = path.join(watchRoot, filename);
+        console.log(`${eventType}: ${filePath}`);
 
-          mixedbread.stores.files.upload(options.store, fs.createReadStream(filePath), {
+        mixedbread.stores.files.upload(
+          options.store,
+          new File([fs.readFileSync(filePath)], filename, {
+            type: "text/plain",
+          }),
+          {
             external_id: filePath,
             metadata: {
               path: filePath,
             },
-          });
-          console.log("File uploaded");
-        },
-      );
+          },
+        );
+        console.log("File uploaded");
+      });
     } catch (err) {
       console.error("Failed to start watcher:", err);
       process.exitCode = 1;
