@@ -131,11 +131,22 @@ interface TokenData {
   created_at: string;
 }
 
-export async function getStoredToken(): Promise<TokenData> {
+export async function getStoredToken(): Promise<TokenData | null> {
   try {
     const data = await fs.readFile(TOKEN_FILE, "utf-8");
     return JSON.parse(data);
   } catch {
     return null;
+  }
+}
+
+export async function deleteToken(): Promise<void> {
+  try {
+    await fs.unlink(TOKEN_FILE);
+  } catch (error) {
+    // Ignore error if file doesn't exist
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
   }
 }
