@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import datetime
-import fnmatch
 import json
 import os
 import re
@@ -122,15 +121,6 @@ def resolve_mgrep_command() -> Sequence[str] | None:
             return ["node", candidate.as_posix()]
     return None
 
-def parse_max_results(tool_input: dict[str, object]) -> int:
-    for key in ("--max-count", "-m", "max_count"):
-        value = tool_input.get(key)
-        if isinstance(value, int):
-            return max(1, min(100, value))
-        if isinstance(value, str) and value.isdigit():
-            return max(1, min(100, int(value)))
-    return DEFAULT_MAX_RESULTS
-
 def extract_paths(line: str, workspace: Path) -> tuple[str | None, str | None, str | None]:
     match = PATH_TOKEN.search(line)
     raw_path = match.group("path") if match else None
@@ -162,20 +152,6 @@ def extract_paths(line: str, workspace: Path) -> tuple[str | None, str | None, s
     display_path = cleaned if cleaned.startswith(".") else rel_path
     return display_path, rel_path, abs_path.as_posix()
 
-def filter_by_glob(lines: list[str], patterns: list[str], workspace: Path) -> list[str]:
-    if not patterns:
-        return lines
-    filtered: list[str] = []
-    for line in lines:
-        _, rel_path, abs_path = extract_paths(line, workspace)
-        if not rel_path and not abs_path:
-            filtered.append(line)
-            continue
-        values = [rel_path, abs_path]
-        if any(val and fnmatch.fnmatch(val, pattern) for pattern in patterns for val in values):
-            filtered.append(line)
-    return filtered
-
 def build_payload(
     lines: list[str],
     pattern: str,
@@ -184,8 +160,6 @@ def build_payload(
     workspace: Path,
 ) -> str:
     header = f"MGrep semantic search for {pattern!r} in {scope_label}"
-    if not lines:
-        return f"{header}\nNo semantic matches found."
     if output_mode == "paths":
         seen: list[str] = []
         for line in lines:
@@ -222,11 +196,20 @@ def is_disabled() -> bool:
     value = os.environ.get("MGREP_HOOK_DISABLE")
     return bool(value and value.lower() in {"1", "true", "yes", "on"})
 
+def should_use_mgrep_for_glob(glob_patterns: list[str], scope: Path, workspace: Path, store: str) -> bool:
+    """
+    Placeholder: Check if files matching glob patterns are indexed.
+    Returns True to use mgrep, False to allow grep.
+    """
+    if not glob_patterns:
+        return True
+    # TODO: Check if files matching glob are indexed
+    debug_log("Placeholder: should_use_mgrep_for_glob - allowing grep for now")
+    return False
+
 def main() -> int:
     payload = read_hook_input()
-    if not payload:
-        return 0
-    if payload.get("tool_name") != "Grep":
+    if not payload or payload.get("tool_name") != "Grep":
         return 0
 
     tool_input = payload.get("tool_input")
@@ -237,54 +220,42 @@ def main() -> int:
     if not isinstance(pattern, str) or not pattern.strip():
         return 0
 
-    if is_disabled():
-        debug_log("MGREP_HOOK_DISABLE is set; skipping")
-        return 0
-
-    if not TOKEN_FILE.exists():
-        debug_log("No ~/.mgrep/token.json found; skipping mgrep")
+    if is_disabled() or not TOKEN_FILE.exists():
         return 0
 
     command_prefix = resolve_mgrep_command()
     if not command_prefix:
-        debug_log("Cannot resolve mgrep binary; skipping")
         return 0
 
     workspace = resolve_workspace(payload)
     scope = resolve_scope_path(tool_input, workspace)
-    scope_label = describe_scope(scope, workspace)
     path_arg = compute_cli_path_arg(scope, workspace)
 
-    case_insensitive = bool(tool_input.get("-i") or tool_input.get("--ignore-case"))
-    max_results = parse_max_results(tool_input)
-    output_mode = tool_input.get("output_mode") or "content"
+    glob_patterns = normalize_globs(tool_input.get("glob"))
+    if glob_patterns:
+        if not should_use_mgrep_for_glob(glob_patterns, scope, workspace, os.environ.get("MGREP_STORE", "mgrep")):
+            return 0
+
+    output_mode = tool_input.get("output_mode", "content")
     if output_mode not in {"content", "paths"}:
         output_mode = "content"
 
-    glob_patterns = normalize_globs(tool_input.get("glob"))
-    store_override = os.environ.get("MGREP_STORE")
-
-    command: list[str] = [*command_prefix, "search"]
-    if case_insensitive:
-        command.append("-i")
-    if max_results:
-        command.extend(["-m", str(max_results)])
-    if store_override:
-        command.extend(["--store", store_override])
-    command.append(pattern)
+    command = [*command_prefix, "search", pattern]
     if path_arg:
         command.append(path_arg)
 
-    debug_log(f"Running command: {shlex.join(command)} (cwd={workspace})")
     stdout = run_mgrep(command, workspace)
     if stdout is None:
         return 0
 
     lines = [line for line in stdout.splitlines() if line.strip()]
-    lines = filter_by_glob(lines, glob_patterns, workspace)
+    if not lines:
+        return 0
+
+    scope_label = describe_scope(scope, workspace)
     payload_text = build_payload(lines, pattern, scope_label, output_mode, workspace)
 
-    hook_response = {
+    response = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",  # Block the original Grep tool
@@ -292,8 +263,8 @@ def main() -> int:
         }
     }
 
-    print(json.dumps(hook_response), file=sys.stderr)
-    return 2
+    print(json.dumps(response))
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())
