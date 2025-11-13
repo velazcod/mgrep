@@ -5,7 +5,11 @@ import type {
   ScoredTextInputChunk,
   ScoredVideoURLInputChunk,
 } from "@mixedbread/sdk/resources/vector-stores/vector-stores";
-import type { FileMetadata } from "../types";
+
+export interface FileMetadata {
+  path: string;
+  hash: string;
+}
 
 export type ChunkType =
   | ScoredTextInputChunk

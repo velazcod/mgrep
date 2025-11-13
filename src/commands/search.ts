@@ -2,8 +2,7 @@ import type { Command } from "commander";
 import { Command as CommanderCommand } from "commander";
 import { join } from "path";
 import { createStore } from "../lib/context";
-import type { ChunkType } from "../lib/store";
-import type { FileMetadata } from "../types";
+import type { ChunkType, FileMetadata } from "../lib/store";
 
 function formatChunk(chunk: ChunkType) {
   const pwd = process.cwd();
