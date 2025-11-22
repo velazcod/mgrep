@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/client";
-import { deviceAuthorizationClient } from "better-auth/plugins";
+import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { getStoredToken } from "../token";
 import { isDevelopment } from "../utils";
 
