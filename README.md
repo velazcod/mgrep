@@ -64,12 +64,18 @@ mgrep "where do we set up auth?"
 
 ## Using it with Coding Agents
 
-- **Claude Code (today)**  
-  1. Run `mgrep install-claude-code`. The command signs you in (if needed), adds the Mixedbread mgrep plugin to the marketplace, and installs it.  
-  2. Open Claude Code, enable the plugin, and point your agent at the repo you are indexing with `mgrep watch`.  
-  3. Ask Claude something just like you do locally; results stream straight into the chat with file paths and line hints.  
-  
-- More agents (Codex, Cursor, Windsurf, etc.) are on the way—this section will grow as soon as each integration lands.
+`mgrep` supports assisted installation commands for many agents:
+- `mgrep install-claude-code` for Claude Code
+- `mgrep install-opencode` for OpenCode
+- `mgrep install-codex` for Codex
+
+These commands sign you in (if needed) and add Mixedbread `mgrep` support to the
+agent. After that you only have to start the agent in your project folder, thats
+it.
+
+### More Agents Coming Soon
+
+More agents (Cursor, Windsurf, etc.) are on the way—this section will grow as soon as each integration lands.
 
 ## Making your agent smarter
 
@@ -113,7 +119,9 @@ We designed `mgrep` to complement `grep`, not replace it. The best code search c
 | `mgrep` / `mgrep search <pattern> [path]` | Natural-language search with many `grep`-style flags (`-i`, `-r`, `-m`...). |
 | `mgrep watch` | Index current repo and keep the Mixedbread store in sync via file watchers. |
 | `mgrep login` & `mgrep logout` | Manage device-based authentication with Mixedbread. |
-| `mgrep install-claude-code` | Log in, add the Mixedbread mgrep plugin to Claude Code, and install it for you. |
+| `mgrep install-claude-code` | Authenticate, add the Mixedbread mgrep plugin to Claude Code. |
+| `mgrep install-opencode` | Authenticate and add the Mixedbread mgrep to OpenCode. |
+| `mgrep install-codex` | Authenticate and add the Mixedbread mgrep to Codex. |
 
 ### mgrep search
 

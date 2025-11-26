@@ -9,6 +9,7 @@ import { watch } from "./commands/watch";
 import { watchMcp } from "./commands/watch_mcp";
 import { installClaudeCode, uninstallClaudeCode } from "./install/claude-code";
 import { installCodex, uninstallCodex } from "./install/codex";
+import { installOpencode, uninstallOpencode } from "./install/opencode";
 import { setupLogger } from "./lib/logger";
 
 setupLogger();
@@ -33,6 +34,8 @@ program.addCommand(installClaudeCode);
 program.addCommand(uninstallClaudeCode);
 program.addCommand(installCodex);
 program.addCommand(uninstallCodex);
+program.addCommand(installOpencode);
+program.addCommand(uninstallOpencode);
 program.addCommand(login);
 program.addCommand(logout);
 program.addCommand(watchMcp);

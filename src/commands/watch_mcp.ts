@@ -20,13 +20,32 @@ export const watchMcp = new Command("mcp")
       process.exit(0);
     });
 
+    // Prevent unhandled promise rejections from crashing the MCP server
+    process.on("unhandledRejection", (reason, promise) => {
+      console.error(
+        "[ERROR] Unhandled Rejection at:",
+        promise,
+        "reason:",
+        reason,
+      );
+    });
+
+    // The MCP server is writing to stdout, so all logs are written to stderr
+    console.log = (...args: any[]) => {
+      process.stderr.write("[LOG] " + args.join(" ") + "\n");
+    };
+
+    console.error = (...args: any[]) => {
+      process.stderr.write("[ERROR] " + args.join(" ") + "\n");
+    };
+
+    console.debug = (...args: any[]) => {
+      process.stderr.write("[DEBUG] " + args.join(" ") + "\n");
+    };
+
     const options: {
       store: string;
     } = cmd.optsWithGlobals();
-
-    setTimeout(() => {
-      startWatch({ store: options.store, dryRun: false });
-    }, 0);
 
     const transport = new StdioServerTransport();
     const server = new Server(
@@ -53,4 +72,23 @@ export const watchMcp = new Command("mcp")
     });
 
     await server.connect(transport);
+
+    const startBackgroundSync = async () => {
+      console.log("[SYNC] Scheduling initial sync in 5 seconds...");
+
+      setTimeout(async () => {
+        console.log("[SYNC] Starting file sync...");
+        try {
+          await startWatch({ store: options.store, dryRun: false });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          console.error("[SYNC] Sync failed:", errorMessage);
+        }
+      }, 1000);
+    };
+
+    startBackgroundSync().catch((error) => {
+      console.error("[SYNC] Background sync setup failed:", error);
+    });
   });
