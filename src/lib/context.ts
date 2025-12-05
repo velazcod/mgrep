@@ -6,6 +6,7 @@ import {
   NodeFileSystem,
 } from "./file";
 import { type Git, NodeGit } from "./git";
+import { isLocalProvider, LocalStore, loadLocalConfig } from "./local";
 import { MixedbreadStore, type Store, TestStore } from "./store";
 import { ensureAuthenticated, isDevelopment, isTest } from "./utils";
 
@@ -16,12 +17,20 @@ const BASE_URL = isDevelopment()
 /**
  * Creates an authenticated Store instance
  * Supports authentication via MXBAI_API_KEY env var or OAuth token
+ * Or local storage via MGREP_PROVIDER=local
  */
 export async function createStore(): Promise<Store> {
   if (isTest) {
     return new TestStore();
   }
 
+  // Check for local provider
+  if (isLocalProvider()) {
+    const config = loadLocalConfig();
+    return new LocalStore(config);
+  }
+
+  // Default: Mixedbread cloud
   await ensureAuthenticated();
 
   async function createClient() {
