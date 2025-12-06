@@ -231,6 +231,25 @@ mgrep "search query"
 
 Note: Command-line options always override environment variables.
 
+## Local Mode (Offline/Private)
+
+`mgrep` can run entirely locally without the Mixedbread cloud. Local mode requires:
+- A **Qdrant** vector database
+- An **OpenAI-compatible** embedding server (e.g., Ollama, LM Studio)
+- Optionally, an **OpenAI-compatible** LLM server for the `-a` flag
+
+Enable local mode and configure your endpoints:
+
+```bash
+export MGREP_PROVIDER=local
+export MGREP_QDRANT_URL=http://localhost:6333
+export MGREP_EMBEDDING_URL=http://localhost:11434
+export MGREP_EMBEDDING_MODEL=mxbai-embed-large
+export MGREP_EMBEDDING_DIMENSIONS=1024
+```
+
+For the full configuration reference and examples, see the [Local Mode Guide](guides/README.md#local-mode-setup).
+
 ## Development
 
 ```bash

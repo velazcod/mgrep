@@ -141,6 +141,71 @@ mgrep "What is the conclusion of the paper?" my-paper.pdf
 
 This will return the most relevant pages from the PDF in order of relevance.
 
+## Local Mode Setup
+
+`mgrep` can run entirely locally without the Mixedbread cloud. Local mode requires:
+- A **Qdrant** vector database
+- An **OpenAI-compatible** embedding server (e.g., Ollama, LM Studio)
+- Optionally, an **OpenAI-compatible** LLM server for the `-a` flag
+
+### Configuration
+
+Enable local mode by setting the `MGREP_PROVIDER` environment variable:
+
+```bash
+export MGREP_PROVIDER=local
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `MGREP_PROVIDER` | Set to `local` for local mode | `mixedbread` |
+| `MGREP_QDRANT_URL` | Qdrant server URL | `http://localhost:6333` |
+| `MGREP_EMBEDDING_URL` | Embedding API endpoint (OpenAI-compatible `/v1/embeddings`) | `http://localhost:11434` |
+| `MGREP_EMBEDDING_MODEL` | Embedding model name | `mxbai-embed-large` |
+| `MGREP_EMBEDDING_DIMENSIONS` | Vector dimensions for the embedding model | `1024` |
+| `MGREP_LLM_URL` | LLM API endpoint (OpenAI-compatible `/v1/chat/completions`) | Falls back to `MGREP_EMBEDDING_URL` |
+| `MGREP_LLM_MODEL` | LLM model for answer generation (`-a` flag) | `llama3.2` |
+| `MGREP_CHUNK_SIZE` | Text chunk size in characters | `1000` |
+| `MGREP_CHUNK_OVERLAP` | Overlap between chunks in characters | `200` |
+
+### Example Configuration
+
+```bash
+# Enable local mode
+export MGREP_PROVIDER=local
+
+# Qdrant vector database
+export MGREP_QDRANT_URL=http://localhost:6333
+
+# Embedding configuration
+export MGREP_EMBEDDING_URL=http://localhost:11434
+export MGREP_EMBEDDING_MODEL=mxbai-embed-large
+export MGREP_EMBEDDING_DIMENSIONS=1024
+
+# LLM configuration (for -a flag)
+export MGREP_LLM_URL=http://localhost:11434
+export MGREP_LLM_MODEL=llama3.2
+
+# Use mgrep
+mgrep watch                          # Index your files
+mgrep "Where is auth configured?"    # Search
+mgrep -a "How does caching work?"    # Search with answer generation
+```
+
+### Limitations
+
+Local mode has some differences compared to Mixedbread cloud:
+
+| Feature | Mixedbread Cloud | Local Mode |
+| --- | --- | --- |
+| Reranking | Yes (enabled by default) | No (pure vector similarity) |
+| Multimodal (images, PDFs) | Yes | Text-only |
+| Background indexing | Yes (async processing) | No (synchronous) |
+| Cloud sync/sharing | Yes | No (data stays local) |
+| Authentication | Required | Not needed |
+
 ## Further reading
 
 - Main project overview and full command list: [`../README.md`](../README.md)  
