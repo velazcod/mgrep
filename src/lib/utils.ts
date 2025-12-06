@@ -6,6 +6,7 @@ import { isText } from "istextorbinary";
 import pLimit from "p-limit";
 import { loginAction } from "../commands/login";
 import type { FileSystem } from "./file";
+import { isLocalProvider } from "./local/config";
 import type { Store } from "./store";
 import type { InitialSyncProgress, InitialSyncResult } from "./sync-helpers";
 
@@ -79,6 +80,11 @@ export async function listStoreFileHashes(
 }
 
 export async function ensureAuthenticated(): Promise<void> {
+  // Skip authentication for local provider
+  if (isLocalProvider()) {
+    return;
+  }
+
   // Check if API key is set via environment variable
   if (process.env.MXBAI_API_KEY) {
     return;

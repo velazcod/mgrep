@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { Command } from "commander";
+import { isLocalProvider } from "../lib/local/config";
 import { ensureAuthenticated } from "../lib/utils";
 
 const shell =
@@ -9,7 +10,21 @@ const shell =
 
 const execAsync = promisify(exec);
 
-async function installPlugin() {
+async function installPluginLocal() {
+  try {
+    await execAsync("claude mcp add mgrep -- mgrep mcp", {
+      shell,
+      env: process.env,
+    });
+    console.log("Successfully installed mgrep as local MCP server for Claude Code");
+  } catch (error) {
+    console.error(`Error installing local MCP server: ${error}`);
+    console.error("Do you have Claude Code installed?");
+    process.exit(1);
+  }
+}
+
+async function installPluginCloud() {
   try {
     await execAsync("claude plugin marketplace add mixedbread-ai/mgrep", {
       shell,
@@ -40,7 +55,21 @@ async function installPlugin() {
   }
 }
 
-async function uninstallPlugin() {
+async function uninstallPluginLocal() {
+  try {
+    await execAsync("claude mcp remove mgrep", {
+      shell,
+      env: process.env,
+    });
+    console.log("Successfully removed mgrep MCP server from Claude Code");
+  } catch (error) {
+    console.error(`Error removing local MCP server: ${error}`);
+    console.error("Do you have Claude Code installed?");
+    process.exit(1);
+  }
+}
+
+async function uninstallPluginCloud() {
   try {
     await execAsync("claude plugin uninstall mgrep", {
       shell,
@@ -74,12 +103,20 @@ async function uninstallPlugin() {
 export const installClaudeCode = new Command("install-claude-code")
   .description("Install the Claude Code plugin")
   .action(async () => {
-    await ensureAuthenticated();
-    await installPlugin();
+    if (isLocalProvider()) {
+      await installPluginLocal();
+    } else {
+      await ensureAuthenticated();
+      await installPluginCloud();
+    }
   });
 
 export const uninstallClaudeCode = new Command("uninstall-claude-code")
   .description("Uninstall the Claude Code plugin")
   .action(async () => {
-    await uninstallPlugin();
+    if (isLocalProvider()) {
+      await uninstallPluginLocal();
+    } else {
+      await uninstallPluginCloud();
+    }
   });
